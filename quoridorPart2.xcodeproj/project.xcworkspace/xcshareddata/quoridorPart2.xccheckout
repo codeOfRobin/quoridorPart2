@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>9BD075A3-19D5-4D76-B5AC-8FC20AE29AE3</string>
+	<key>IDESourceControlProjectName</key>
+	<string>quoridorPart2</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>74E1982B5262906F33378647950F1EE702B0D3DC</key>
+		<string>https://github.com/codeofRobin/quoridorPart2.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>quoridorPart2.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>74E1982B5262906F33378647950F1EE702B0D3DC</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/codeofRobin/quoridorPart2.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>74E1982B5262906F33378647950F1EE702B0D3DC</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>74E1982B5262906F33378647950F1EE702B0D3DC</string>
+			<key>IDESourceControlWCCName</key>
+			<string>quoridorPart2</string>
+		</dict>
+	</array>
+</dict>
+</plist>

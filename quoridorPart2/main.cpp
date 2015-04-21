@@ -364,14 +364,20 @@ float minimax(gameState node,int depth, float alpha, float beta,bool maximisingP
     {
         return utility(node);
     }
+    int temp;
     if (maximisingPlayer)
     {
         float v=(-infinity);
         vector<qMove>allValidMoves=validMoves(node);
         for (int i=0; i<allValidMoves.size(); i++)
         {
-            v=max(v,minimax(moveState(node, allValidMoves[i]), depth-1, alpha,beta,false));
-            bestMove=allValidMoves[i];
+            temp=minimax(moveState(node, allValidMoves[i]), depth-1, alpha,beta,false);
+            if(v<temp && depth==2)
+            {
+                v=temp;
+                bestMove=allValidMoves[i];
+            }
+            
             alpha=max(alpha,v);
             if (beta<=alpha)
             {
@@ -397,6 +403,7 @@ float minimax(gameState node,int depth, float alpha, float beta,bool maximisingP
         return v;
     }
 }
+
 
 //end minimax stuff
 
