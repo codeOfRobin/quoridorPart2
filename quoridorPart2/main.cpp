@@ -21,6 +21,8 @@ using namespace std;
 int N,M,K, time_left, playerIndex;
 int ourPlayer;
 
+int utilityPlayerOne, utilityPlayerTwo;
+
 struct wall
 {
     int orientation;
@@ -80,6 +82,8 @@ struct position
     int col;
 };
 
+vector<position> playerPaths[2];
+
 struct player
 {
     position pos;
@@ -100,11 +104,14 @@ struct player
     }
 };
 
+
 struct gameState
 {
     int n; // Length
     int m; // Breath
     int currentPlayer;
+    bool wasPreviousMoveChangingPath;
+    qMove previousMove;
     player players[2];
     vector<gameState> children;
     vector<wall>  wallsPlacedSoFar; // (Orientation, Row Centre, Col Centre) -> Orientation 0 for horizontal, 1 for vertical
@@ -116,7 +123,9 @@ struct gameState
         m = breadth;
         this->players[0] = player(1, (m+1)/2, totalWalls);
         this->players[1] = player(n, (m+1)/2,totalWalls);
+        this->previousMove = qMove();
         cout<<"robin " <<totalWalls;
+        wasPreviousMoveChangingPath = false;
     }
     
 };
@@ -218,12 +227,35 @@ bool isValidPosition(position pos, gameState currentState)
     return (pos.row >= 1 && pos.col >= 1 && pos.row <= currentState.n && pos.col <= currentState.m);
 }
 
+bool doesNewMoveChangePath(gameState currentState) {
+    if (playerPaths[0].size() == 0) {
+        return true;
+    }
+    else if (playerPaths[1].size() == 0) {
+        return true;
+    }
+    else {
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < playerPaths[i].size() - 1; j++) {
+                if (!arePositionsAdjacent(currentState, playerPaths[i][j], playerPaths[i][j+1]) )
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+
 int canPlayerReachGoalState(gameState currentState, int playerInd) {
     position pos = currentState.players[playerInd].pos;
     queue<position> visited;
     visited.push(pos);
     int distance[currentState.n + 1][currentState.m + 1];
+    position parent[currentState.n + 1][currentState.m + 1];
     memset(distance, -1, sizeof(distance));
+    memset(parent, -1, sizeof(parent));
     distance[pos.row][pos.col] = 0;
     if (isGoalState(currentState, pos, playerInd))
     {
@@ -237,10 +269,19 @@ int canPlayerReachGoalState(gameState currentState, int playerInd) {
         for (int i = 0; i < currentNeighbours.size(); i++) {
             if (distance[currentNeighbours[i].row][currentNeighbours[i].col] == -1) {
                 if (isGoalState(currentState, currentNeighbours[i], playerInd)) {
+                    parent[currentNeighbours[i].row][currentNeighbours[i].col] = currentPos;
                     distance[currentNeighbours[i].row][currentNeighbours[i].col] = distance[currentPos.row][currentPos.col] + 1;
+                    position current = currentNeighbours[i];
+                    while( current.row != -1) {
+                        playerPaths[playerInd].clear();
+                        playerPaths[playerInd].pb(current);
+                        current = parent[current.row][current.col];
+                        
+                    }
                     return distance[currentNeighbours[i].row][currentNeighbours[i].col];
                 }
                 visited.push(currentNeighbours[i]);
+                parent[currentNeighbours[i].row][currentNeighbours[i].col] = currentPos;
                 distance[currentNeighbours[i].row][currentNeighbours[i].col] = distance[currentPos.row][currentPos.col] + 1;
             }
         }
@@ -342,19 +383,22 @@ bool isValidMove(gameState currentState, qMove myMove) {
 
 
 qMove bestMove;
-int maxDepth=2;
+int maxDepth=3;
 
 
 float utility(gameState gameData)
 {
-    int utility1,utility2;
-    utility1=canPlayerReachGoalState(gameData, ourPlayer);
-    utility2=canPlayerReachGoalState(gameData, (1-ourPlayer));
-    if(utility1<0 || utility2<0)
+    if (doesNewMoveChangePath(gameData) == true)
     {
-        return infinity;
+        utilityPlayerOne=canPlayerReachGoalState(gameData, ourPlayer);
+        utilityPlayerTwo=canPlayerReachGoalState(gameData, (1-ourPlayer));
+        if(utilityPlayerOne<0 || utilityPlayerTwo<0)
+        {
+            return infinity;
+        }
+        return -utilityPlayerOne+0.9*utilityPlayerTwo;
     }
-    return -utility1+0.9*utility2;
+    return -utilityPlayerOne+0.9*utilityPlayerTwo;
 }
 
 
@@ -455,6 +499,7 @@ gameState moveState(gameState currentState, qMove myMove)
     if (myMove.type == 0) {
         afterMoveState.players[currentState.currentPlayer].pos.row = myMove.row;
         afterMoveState.players[currentState.currentPlayer].pos.col = myMove.col;
+        afterMoveState.wasPreviousMoveChangingPath = false;
     }
     else if (myMove.type == 1 || myMove.type == 2) {
         int orientation = myMove.type - 1;
@@ -463,7 +508,9 @@ gameState moveState(gameState currentState, qMove myMove)
         wall movedWall(orientation, rowCenter, colCenter);
         afterMoveState.wallsPlacedSoFar.pb(movedWall);
         afterMoveState.players[currentState.currentPlayer].wallsLeft--;
+        afterMoveState.wasPreviousMoveChangingPath = true;
     }
+    afterMoveState.previousMove = myMove;
     afterMoveState.currentPlayer = 1 - afterMoveState.currentPlayer;
     return afterMoveState;
 }
@@ -523,6 +570,8 @@ int main(int argc, char *argv[])
     ourPlayer = playerIndex - 1;
     
     GS=gameState(N,M,K);
+    utilityPlayerOne = N - 1;
+    utilityPlayerTwo = N - 1;
     cout<<"asdkhf "<<GS.n<<" asdkh "<<GS.m<<" "<<GS.players[0].wallsLeft;
     
     cout<<"Player "<<playerIndex<<endl;
