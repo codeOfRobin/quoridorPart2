@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <arpa/inet.h>
 //#include <bits/stdc++.h>
+
 #include <iostream>
 #include <vector>
 #include <queue>
@@ -161,8 +162,7 @@ vector<qMove> validMoves(gameState currentState)
             }
         }
     }
-    float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    if (currentState.players[currentPlayerIndex].wallsLeft > 0 && r > 0.8) {
+    if (currentState.players[currentPlayerIndex].wallsLeft > 0) {
         for (int i = 2; i <= currentState.n; i++) {
             for (int j = 2; j <= currentState.m; j++) {
                 qMove potentialMove1(1, i, j);
@@ -175,16 +175,7 @@ vector<qMove> validMoves(gameState currentState)
                 }
             }
         }
-        r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
     }
-    //    cout<<" dsakfjasdf "<<currentMoves.size();
-    
-    std::random_shuffle(currentMoves.begin(), currentMoves.end());
-    
-    //    for (int i=0; i<currentMoves.size(); i++)
-    //    {
-    //        cout<<"\n move::"<<currentMoves[i].type<<" "<<currentMoves[i].row<<" "<<currentMoves[i].col;
-    //    }
     return currentMoves;
 }
 
@@ -351,10 +342,19 @@ bool isValidMove(gameState currentState, qMove myMove) {
 
 
 qMove bestMove;
+int maxDepth=2;
 
 
-float utility(gameState gameData) {
-    return -canPlayerReachGoalState(gameData, ourPlayer) + canPlayerReachGoalState(gameData, (1-ourPlayer));
+float utility(gameState gameData)
+{
+    int utility1,utility2;
+    utility1=canPlayerReachGoalState(gameData, ourPlayer);
+    utility2=canPlayerReachGoalState(gameData, (1-ourPlayer));
+    if(utility1<0 || utility2<0)
+    {
+        return infinity;
+    }
+    return -utility1+0.9*utility2;
 }
 
 
@@ -369,13 +369,17 @@ float minimax(gameState node,int depth, float alpha, float beta,bool maximisingP
     {
         float v=(-infinity);
         vector<qMove>allValidMoves=validMoves(node);
+        //        cout<<"fhk"<<allValidMoves.size()<<endl;
         for (int i=0; i<allValidMoves.size(); i++)
         {
-            temp=minimax(moveState(node, allValidMoves[i]), depth-1, alpha,beta,false);
-            if(v<temp && depth==2)
+            temp=max(v,minimax(moveState(node, allValidMoves[i]), depth-1, alpha,beta,false));
+            if(v<temp )
             {
                 v=temp;
-                bestMove=allValidMoves[i];
+                if(depth==maxDepth)
+                {
+                    bestMove=allValidMoves[i];
+                }
             }
             
             alpha=max(alpha,v);
@@ -403,7 +407,6 @@ float minimax(gameState node,int depth, float alpha, float beta,bool maximisingP
         return v;
     }
 }
-
 
 //end minimax stuff
 
@@ -469,12 +472,176 @@ gameState moveState(gameState currentState, qMove myMove)
  */
 
 
+gameState GS(1,1,1);
 
-int main(int argc, const char * argv[])
+
+int main(int argc, char *argv[])
 {
-    // insert code here...
+    srand (static_cast <unsigned> (time(0)));
+    int sockfd = 0, n = 0;
+    char recvBuff[1024];
+    char sendBuff[1025];
+    struct sockaddr_in serv_addr;
     
-    std::cout << "Hello, World!\n";
-
+    if(argc != 3)
+    {
+        printf("\n Usage: %s <ip of server> <port no> \n",argv[0]);
+        //        return 1;
+    }
+    
+    
+    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        printf("\n Error : Could not create socket \n");
+        return 1;
+    }
+    
+    memset(&serv_addr, '0', sizeof(serv_addr));
+    
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(12345);
+    
+    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
+    {
+        printf("\n inet_pton error occured\n");
+        return 1;
+    }
+    
+    if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("\n Error : Connect Failed \n");
+        return 1;
+    }
+    
+    cout<<"Quoridor will start..."<<endl;
+    
+    memset(recvBuff, '0',sizeof(recvBuff));
+    n = read(sockfd, recvBuff, sizeof(recvBuff)-1);
+    recvBuff[n] = 0;
+    sscanf(recvBuff, "%d %d %d %d %d", &playerIndex, &N, &M, &K, &time_left);
+    
+    ourPlayer = playerIndex - 1;
+    
+    GS=gameState(N,M,K);
+    cout<<"asdkhf "<<GS.n<<" asdkh "<<GS.m<<" "<<GS.players[0].wallsLeft;
+    
+    cout<<"Player "<<playerIndex<<endl;
+    cout<<"Time "<<time_left<<endl;
+    cout<<"Board size "<<N<<"x"<<M<<" :"<<K<<endl;
+    float TL;
+    int om,oro,oc;
+    int m,r,c;
+    int d=3;
+    char s[100];
+    int x=1;
+    if(playerIndex == 1)
+    {
+        
+        memset(sendBuff, '0', sizeof(sendBuff));
+        string temp;
+        //	cin>>m>>r>>c;
+        //        qMove moveToMake=alphaBetaSearch(GS, 2);
+        minimax(GS,maxDepth, -infinity, infinity,true);
+        qMove moveToMake=bestMove;
+        GS=moveState(GS, moveToMake);
+        if (moveToMake.type==-1)
+        {
+            //            snprintf(sendBuff, sizeof(sendBuff), "pass");
+        }
+        else
+        {
+            snprintf(sendBuff, sizeof(sendBuff), "%d %d %d", moveToMake.type, moveToMake.row , moveToMake.col);
+            write(sockfd, sendBuff, strlen(sendBuff));
+        }
+        
+        
+        memset(recvBuff, '0',sizeof(recvBuff));
+        n = read(sockfd, recvBuff, sizeof(recvBuff)-1);
+        recvBuff[n] = 0;
+        sscanf(recvBuff, "%f %d", &TL, &d);
+        cout<<TL<<" "<<d<<endl;
+        if(d==1)
+        {
+            cout<<"You win!! Yayee!! :D ";
+            x=0;
+        }
+        else if(d==2)
+        {
+            cout<<"Loser :P ";
+            x=0;
+        }
+    }
+    
+    while(x)
+    {
+        memset(recvBuff, '0',sizeof(recvBuff));
+        n = read(sockfd, recvBuff, sizeof(recvBuff)-1);
+        recvBuff[n] = 0;
+        sscanf(recvBuff, "%d %d %d %d", &om,&oro,&oc,&d);
+        cout << om<<" "<<oro<<" "<<oc << " "<<d<<endl;
+        qMove opponentMove(om,oro,oc);
+        GS=moveState(GS,opponentMove);
+        
+        if(d==1)
+        {
+            cout<<"You win!! Yayee!! :D ";
+            break;
+        }
+        else if(d==2)
+        {
+            cout<<"Loser :P ";
+            break;
+        }
+        memset(sendBuff, '0', sizeof(sendBuff));
+        string temp;
+        //        qMove moveToMake=alphaBetaSearch(GS, 2);
+        
+        minimax(GS,maxDepth, -infinity, infinity,true);
+        qMove moveToMake=bestMove;
+        GS=moveState(GS, moveToMake);
+        if (moveToMake.type==-1)
+        {
+            //            snprintf(sendBuff, sizeof(sendBuff), "pass");
+        }
+        else
+        {
+            printf("%d %d %d", moveToMake.type, moveToMake.row , moveToMake.col);
+            snprintf(sendBuff, sizeof(sendBuff), "%d %d %d", moveToMake.type, moveToMake.row , moveToMake.col);
+            write(sockfd, sendBuff, strlen(sendBuff));
+        }
+        
+        memset(recvBuff, '0',sizeof(recvBuff));
+        n = read(sockfd, recvBuff, sizeof(recvBuff)-1);
+        recvBuff[n] = 0;
+        sscanf(recvBuff, "%f %d", &TL, &d);//d=3 indicates game continues.. d=2 indicates lost game, d=1 means game won.
+        cout<<TL<<" "<<d<<endl;
+        if(d==1)
+        {
+            cout<<"You win!! Yayee!! :D ";
+            break;
+        }
+        else if(d==2)
+        {
+            cout<<"Loser :P ";
+            break;
+        }
+    }
+    cout<<endl<<"The End"<<endl;
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
